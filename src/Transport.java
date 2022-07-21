@@ -1,13 +1,13 @@
 public abstract class Transport {
-    public int id = 0;
+    protected int id = 0;
     public int gasAmount = 100;
     public int speed = 0;
     public int currentPassengers = 0;
-    public final int maxPassengers;
+    private final int maxPassengers;
 
     public enum State {
         running("운행 중"),
-        garage("차고지행"),
+        parking("차고지행"),
         normal("일반"),
         unable("운행불가");
 
@@ -31,6 +31,9 @@ public abstract class Transport {
 
     public void ChangeSpeed(int acceleration) {
         speed += acceleration;
+        if (speed <= 0) {
+            speed = 0;
+        }
     }
 
     public void ChangeState(State newState) {
@@ -39,6 +42,15 @@ public abstract class Transport {
         if (state.stateName.equals("차고지행")) {
             currentPassengers = 0;
         }
+    }
+
+    public void ChangeGas(int amount) {
+        gasAmount += amount;
+        if (gasAmount <= 0) {
+            gasAmount = 0;
+        }
+
+        System.out.printf("주유량 = %d\n", gasAmount);
     }
 
     public boolean AddPassengers(int newPassengers) {
@@ -51,20 +63,6 @@ public abstract class Transport {
         System.out.printf("잔여 승객 수 = %d\n", maxPassengers - currentPassengers);
 
         return true;
-    }
-
-    public void ConsumeGas(int amount) {
-        gasAmount -= amount;
-        System.out.printf("주유량 = %d\n", gasAmount);
-        if (gasAmount < 10) {
-            ChangeState(State.garage);
-            System.out.println("주유 필요!");
-        }
-    }
-
-    public void RefuelGas(int amount) {
-        gasAmount += amount;
-        System.out.printf("주유량 = %d\n", gasAmount);
     }
 }
 
@@ -85,6 +83,16 @@ class Bus extends Transport {
             return true;
         }
         return false;
+    }
+
+    @Override
+    public void ChangeGas(int amount) {
+        super.ChangeGas(amount);
+
+        if (gasAmount < 10) {
+            ChangeState(State.parking);
+            System.out.println("주유 필요!");
+        }
     }
 }
 
@@ -109,26 +117,27 @@ class Taxi extends Transport {
             System.out.println("탑승 불가!");
             return false;
         }
+
         if (super.AddPassengers(newPassengers)) {
             System.out.printf("기본요금 확인 = %d\n", minimumFare);
             this.destination = destination;
             System.out.printf("목적지 = %s\n", this.destination);
             System.out.printf("목적지까지의 거리 = %dkm\n", distance);
 
-            int newFare = minimumFare + farePerDistance * distance;
+            int newFare = minimumFare + (farePerDistance) * distance;
             System.out.printf("지불할 요금 = %d\n", newFare);
             accumulatedFare += newFare;
 
             ChangeState(State.running);
             return true;
         }
+
         return false;
     }
 
     @Override
-    public void ConsumeGas(int amount) {
-        gasAmount -= amount;
-        System.out.printf("주유량 = %d\n", gasAmount);
+    public void ChangeGas(int amount) {
+        super.ChangeGas(amount);
 
         if (gasAmount < 10) {
             ChangeState(State.unable);
